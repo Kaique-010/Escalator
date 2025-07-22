@@ -1,0 +1,11 @@
+{% extends 'escalator/base.html' %}
+{% block title %}Excluir Funcionário | Escalator{% endblock %}
+{% block content %}
+<h2>Excluir Funcionário</h2>
+<p>Tem certeza que deseja excluir o funcionário <strong>{{ object.nome }}</strong>?</p>
+<form method="post">
+    {% csrf_token %}
+    <button type="submit" class="btn btn-danger">Sim, excluir</button>
+    <a href="{% url 'funcionario-list' %}" class="btn btn-secondary">Cancelar</a>
+</form>
+{% endblock %}

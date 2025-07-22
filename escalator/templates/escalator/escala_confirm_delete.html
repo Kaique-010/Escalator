@@ -1,0 +1,16 @@
+{% extends 'escalator/base.html' %}
+{% block title %}Excluir Escala | Escalator{% endblock %}
+{% block content %}
+<h2>Excluir Escala</h2>
+<p>Tem certeza que deseja excluir esta escala?</p>
+<ul class="list-group mb-3">
+    <li class="list-group-item"><strong>Funcionário:</strong> {{ object.funcionario.nome }}</li>
+    <li class="list-group-item"><strong>Turno:</strong> {{ object.turno.nome }}</li>
+    <li class="list-group-item"><strong>Data:</strong> {{ object.data|date:'d/m/Y' }}</li>
+</ul>
+<form method="post">
+    {% csrf_token %}
+    <button type="submit" class="btn btn-danger">Sim, excluir</button>
+    <a href="{% url 'escala-list' %}" class="btn btn-secondary">Cancelar</a>
+</form>
+{% endblock %}

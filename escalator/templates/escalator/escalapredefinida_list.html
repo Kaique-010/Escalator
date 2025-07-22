@@ -1,0 +1,41 @@
+{% extends 'escalator/base.html' %}
+{% block title %}Escalas Pré-definidas | Escalator{% endblock %}
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-3">
+    <h2><i class="fa-solid fa-layer-group"></i> Escalas Pré-definidas</h2>
+    <a href="{% url 'escalapredefinida-create' %}" class="btn btn-success"><i class="fa-solid fa-plus"></i> Nova
+        Escala</a>
+</div>
+<table class="table table-hover">
+    <thead>
+        <tr>
+            <th>Nome</th>
+            <th>Descrição</th>
+            <th>Trabalho</th>
+            <th>Descanso</th>
+            <th>Ações</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for escala in escalas_predefinidas %}
+        <tr>
+            <td><a href="{% url 'escalapredefinida-detail' escala.pk %}"><strong style="color:#ffd700;">{{ escala.nome
+                        }}</strong></a></td>
+            <td>{{ escala.descricao }}</td>
+            <td><span class="badge bg-primary">{{ escala.horas_trabalho }}h</span></td>
+            <td><span class="badge bg-warning">{{ escala.horas_descanso }}h</span></td>
+            <td>
+                <a href="{% url 'escalapredefinida-update' escala.pk %}" class="btn btn-sm btn-primary"><i
+                        class="fa-solid fa-pen"></i></a>
+                <a href="{% url 'escalapredefinida-delete' escala.pk %}" class="btn btn-sm btn-danger"><i
+                        class="fa-solid fa-trash"></i></a>
+            </td>
+        </tr>
+        {% empty %}
+        <tr>
+            <td colspan="5" class="text-center">Nenhuma escala pré-definida cadastrada.</td>
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>
+{% endblock %}

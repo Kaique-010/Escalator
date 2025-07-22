@@ -1,0 +1,52 @@
+{% extends 'escalator/base.html' %}
+{% block title %}Escala | Escalator{% endblock %}
+{% block content %}
+<h2>{% if object %}Editar{% else %}Nova{% endif %} Escala</h2>
+<form method="post" class="mt-3" id="escala-form">
+    {% csrf_token %}
+    <div class="row">
+        <div class="col-md-6">
+            <div class="mb-3">
+                <label for="escala-predefinida" class="form-label">Escala pré-definida</label>
+                <select id="escala-predefinida" class="form-select">
+                    <option value="">Selecione uma escala...</option>
+                    {% for escala in escalas_predefinidas %}
+                    <option value="{{ escala.pk }}" data-trabalho="{{ escala.horas_trabalho }}"
+                        data-descanso="{{ escala.horas_descanso }}">{{ escala.nome }} ({{ escala.horas_trabalho }}x{{
+                        escala.horas_descanso }})</option>
+                    {% endfor %}
+                </select>
+                <small class="form-text text-muted">Selecione para sugerir turno e data automaticamente.</small>
+            </div>
+            <div class="mb-3">
+                <label for="id_turno" class="form-label">Turno</label>
+                <select name="turno" id="id_turno" class="form-select">
+                    {% for turno in form.fields.turno.queryset %}
+                    <option value="{{ turno.pk }}" {% if form.initial.turno == turno.pk %}selected{% endif %}>
+                        {{ turno.nome }} ({{ turno.hora_inicio|time:'H:i' }} - {{ turno.hora_fim|time:'H:i' }})
+                    </option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="mb-3">
+                <label for="id_data" class="form-label">Data</label>
+                <input type="date" name="data" id="id_data" class="form-control"
+                    value="{{ form.initial.data|default:'' }}">
+            </div>
+            {{ form.funcionario.label_tag }}
+            {{ form.funcionario }}
+        </div>
+    </div>
+    <button type="submit" class="btn btn-success">Salvar</button>
+    <a href="{% url 'escala-list' %}" class="btn btn-secondary">Cancelar</a>
+</form>
+{% endblock %}
+{% block extra_js %}
+<script>
+    document.getElementById('escala-predefinida').addEventListener('change', function () {
+        if (this.value) {
+            showToast('Sugestão: selecione o turno correspondente à escala escolhida!', 'info');
+        }
+    });
+</script>
+{% endblock %}

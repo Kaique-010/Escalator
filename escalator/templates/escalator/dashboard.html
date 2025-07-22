@@ -1,0 +1,155 @@
+{% extends 'escalator/base.html' %}
+{% block title %}Dashboard | Escalator{% endblock %}
+{% block content %}
+<h1 class="mb-5 text-center"
+    style="font-size:2.5rem; font-weight:900; letter-spacing:2px; color:#ffd700; text-shadow:1px 2px 8px #000a;">
+    Dashboard</h1>
+<div class="row mb-5 justify-content-center">
+    <div class="col-md-3 mb-4">
+        <div class="card text-center py-4">
+            <div class="card-body">
+                <div class="mb-2"><i class="fa-solid fa-users fa-2x" style="color:#ffd700;"></i></div>
+                <h5 class="card-title">Funcionários</h5>
+                <p class="display-5 fw-bold mb-0" style="color:#ffd700;">{{ total_funcionarios }}</p>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3 mb-4">
+        <div class="card text-center py-4">
+            <div class="card-body">
+                <div class="mb-2"><i class="fa-solid fa-clock fa-2x" style="color:#ffd700;"></i></div>
+                <h5 class="card-title">Turnos</h5>
+                <p class="display-5 fw-bold mb-0" style="color:#ffd700;">{{ total_turnos }}</p>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3 mb-4">
+        <div class="card text-center py-4">
+            <div class="card-body">
+                <div class="mb-2"><i class="fa-solid fa-calendar-days fa-2x" style="color:#ffd700;"></i></div>
+                <h5 class="card-title">Escalas</h5>
+                <p class="display-5 fw-bold mb-0" style="color:#ffd700;">{{ total_escalas }}</p>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3 mb-4">
+        <div class="card text-center py-4">
+            <div class="card-body">
+                <div class="mb-2"><i class="fa-solid fa-mug-hot fa-2x" style="color:#ffd700;"></i></div>
+                <h5 class="card-title">Folgas</h5>
+                <p class="display-5 fw-bold mb-0" style="color:#ffd700;">{{ total_folgas }}</p>
+            </div>
+        </div>
+    </div>
+</div>
+<div class="row justify-content-center mb-5">
+    <div class="col-md-6 mb-4">
+        <div class="card">
+            <div class="card-header bg-transparent text-center"
+                style="color:#ffd700; font-weight:700; font-size:1.2rem;">
+                <i class="fa-solid fa-chart-pie"></i> Distribuição de Escalas e Folgas Hoje
+            </div>
+            <div class="card-body">
+                <canvas id="graficoHoje" height="120"></canvas>
+            </div>
+        </div>
+    </div>
+</div>
+<div class="row">
+    <div class="col-md-6">
+        <div class="card mb-4">
+            <div class="card-header bg-transparent text-center" style="color:#ffd700; font-weight:700;">
+                <i class="fa-solid fa-calendar-days"></i> Escalas de hoje
+            </div>
+            <div class="card-body p-0">
+                <table class="table table-hover mb-0">
+                    <thead>
+                        <tr>
+                            <th>Funcionário</th>
+                            <th>Turno</th>
+                            <th>Data</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for escala in escalas_hoje %}
+                        <tr>
+                            <td>{{ escala.funcionario.nome }}</td>
+                            <td>{{ escala.turno.nome }}</td>
+                            <td>{{ escala.data|date:'d/m/Y' }}</td>
+                        </tr>
+                        {% empty %}
+                        <tr>
+                            <td colspan="3" class="text-center">Nenhuma escala para hoje.</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-6">
+        <div class="card mb-4">
+            <div class="card-header bg-transparent text-center" style="color:#ffd700; font-weight:700;">
+                <i class="fa-solid fa-mug-hot"></i> Folgas de hoje
+            </div>
+            <div class="card-body p-0">
+                <table class="table table-hover mb-0">
+                    <thead>
+                        <tr>
+                            <th>Funcionário</th>
+                            <th>Data</th>
+                            <th>Motivo</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for folga in folgas_hoje %}
+                        <tr>
+                            <td>{{ folga.funcionario.nome }}</td>
+                            <td>{{ folga.data|date:'d/m/Y' }}</td>
+                            <td>{{ folga.motivo|default:'-' }}</td>
+                        </tr>
+                        {% empty %}
+                        <tr>
+                            <td colspan="3" class="text-center">Nenhuma folga para hoje.</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+{% block extra_js %}
+<script>
+    const ctx = document.getElementById('graficoHoje').getContext('2d');
+    const chart = new Chart(ctx, {
+        type: 'doughnut',
+        data: {
+            labels: ['Escalas', 'Folgas'],
+            datasets: [{
+                data: [{{ escalas_hoje| length }}, {{ folgas_hoje| length }}],
+    backgroundColor: [
+        'rgba(255, 215, 0, 0.9)',
+        'rgba(255, 179, 0, 0.9)'
+    ],
+        borderColor: [
+            'rgba(255, 215, 0, 1)',
+            'rgba(255, 179, 0, 1)'
+        ],
+            borderWidth: 2
+        }]
+    },
+    options: {
+        plugins: {
+            legend: {
+                labels: {
+                    color: '#ffd700',
+                        font: { weight: 'bold', size: 16 }
+                }
+            }
+        }
+    }
+});
+</script>
+{% endblock %}

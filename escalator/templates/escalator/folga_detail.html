@@ -1,0 +1,13 @@
+{% extends 'escalator/base.html' %}
+{% block title %}Detalhes da Folga | Escalator{% endblock %}
+{% block content %}
+<h2>Detalhes da Folga</h2>
+<ul class="list-group mb-3">
+    <li class="list-group-item"><strong>Funcionário:</strong> {{ object.funcionario.nome }}</li>
+    <li class="list-group-item"><strong>Data:</strong> {{ object.data|date:'d/m/Y' }}</li>
+    <li class="list-group-item"><strong>Motivo:</strong> {{ object.motivo|default:'-' }}</li>
+</ul>
+<a href="{% url 'folga-update' object.pk %}" class="btn btn-primary">Editar</a>
+<a href="{% url 'folga-delete' object.pk %}" class="btn btn-danger">Excluir</a>
+<a href="{% url 'folga-list' %}" class="btn btn-secondary">Voltar</a>
+{% endblock %}

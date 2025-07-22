@@ -1,0 +1,18 @@
+{% extends 'escalator/base.html' %}
+{% block title %}Detalhes da Escala | Escalator{% endblock %}
+{% block content %}
+<h2>Detalhes da Escala</h2>
+<ul class="list-group mb-3">
+    <li class="list-group-item"><strong>Funcionário:</strong> {{ object.funcionario.nome }}</li>
+    <li class="list-group-item"><strong>Turno:</strong> {{ object.turno.nome }}</li>
+    <li class="list-group-item"><strong>Data:</strong> {{ object.data|date:'d/m/Y' }}</li>
+</ul>
+<form method="post" action="{% url 'gerar-folgas-automaticas' object.pk %}" style="display:inline;">
+    {% csrf_token %}
+    <button type="submit" class="btn btn-warning mb-3"><i class="fa-solid fa-magic-wand-sparkles"></i> Gerar folgas
+        automáticas</button>
+</form>
+<a href="{% url 'escala-update' object.pk %}" class="btn btn-primary">Editar</a>
+<a href="{% url 'escala-delete' object.pk %}" class="btn btn-danger">Excluir</a>
+<a href="{% url 'escala-list' %}" class="btn btn-secondary">Voltar</a>
+{% endblock %}

@@ -1,0 +1,13 @@
+{% extends 'escalator/base.html' %}
+{% block title %}Detalhes do Turno | Escalator{% endblock %}
+{% block content %}
+<h2>Detalhes do Turno</h2>
+<ul class="list-group mb-3">
+    <li class="list-group-item"><strong>Nome:</strong> {{ object.nome }}</li>
+    <li class="list-group-item"><strong>Hora de Início:</strong> {{ object.hora_inicio|time:'H:i' }}</li>
+    <li class="list-group-item"><strong>Hora de Término:</strong> {{ object.hora_fim|time:'H:i' }}</li>
+</ul>
+<a href="{% url 'turno-update' object.pk %}" class="btn btn-primary">Editar</a>
+<a href="{% url 'turno-delete' object.pk %}" class="btn btn-danger">Excluir</a>
+<a href="{% url 'turno-list' %}" class="btn btn-secondary">Voltar</a>
+{% endblock %}

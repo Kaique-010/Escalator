@@ -1,0 +1,14 @@
+{% extends 'escalator/base.html' %}
+{% block title %}Detalhes do Funcionário | Escalator{% endblock %}
+{% block content %}
+<h2>Detalhes do Funcionário</h2>
+<ul class="list-group mb-3">
+    <li class="list-group-item"><strong>Nome:</strong> {{ object.nome }}</li>
+    <li class="list-group-item"><strong>Matrícula:</strong> {{ object.matricula }}</li>
+    <li class="list-group-item"><strong>Cargo:</strong> {{ object.cargo }}</li>
+    <li class="list-group-item"><strong>Ativo:</strong> {% if object.ativo %}Sim{% else %}Não{% endif %}</li>
+</ul>
+<a href="{% url 'funcionario-update' object.pk %}" class="btn btn-primary">Editar</a>
+<a href="{% url 'funcionario-delete' object.pk %}" class="btn btn-danger">Excluir</a>
+<a href="{% url 'funcionario-list' %}" class="btn btn-secondary">Voltar</a>
+{% endblock %}

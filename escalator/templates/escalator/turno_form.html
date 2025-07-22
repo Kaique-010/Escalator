@@ -1,0 +1,58 @@
+{% extends 'escalator/base.html' %}
+{% block title %}Turno | Escalator{% endblock %}
+{% block content %}
+<h2>{% if object %}Editar{% else %}Novo{% endif %} Turno</h2>
+<form method="post" class="mt-3" id="turno-form">
+    {% csrf_token %}
+    <div class="row">
+        <div class="col-md-6">
+            <div class="mb-3">
+                <label for="escala-predefinida" class="form-label">Escala pré-definida</label>
+                <select id="escala-predefinida" class="form-select">
+                    <option value="">Selecione uma escala...</option>
+                    {% for escala in escalas_predefinidas %}
+                    <option value="{{ escala.hora_inicio }},{{ escala.hora_fim }}"
+                        data-trabalho="{{ escala.horas_trabalho }}" data-descanso="{{ escala.horas_descanso }}">{{
+                        escala.nome }} ({{ escala.horas_trabalho }}x{{ escala.horas_descanso }})</option>
+                    {% endfor %}
+                </select>
+                <small class="form-text text-muted">Selecione para preencher automaticamente os horários.</small>
+            </div>
+            <div class="mb-3">
+                <label for="id_nome" class="form-label">Nome do turno</label>
+                {{ form.nome }}
+            </div>
+            <div class="mb-3">
+                <label for="id_hora_inicio" class="form-label">Hora de início</label>
+                <input type="time" name="hora_inicio" id="id_hora_inicio" class="form-control"
+                    value="{{ form.initial.hora_inicio|default:'' }}">
+            </div>
+            <div class="mb-3">
+                <label for="id_hora_fim" class="form-label">Hora de término</label>
+                <input type="time" name="hora_fim" id="id_hora_fim" class="form-control"
+                    value="{{ form.initial.hora_fim|default:'' }}">
+            </div>
+        </div>
+    </div>
+    <button type="submit" class="btn btn-success">Salvar</button>
+    <a href="{% url 'turno-list' %}" class="btn btn-secondary">Cancelar</a>
+</form>
+{% endblock %}
+{% block extra_js %}
+<script>
+    document.getElementById('escala-predefinida').addEventListener('change', function () {
+        const option = this.options[this.selectedIndex];
+        const horasTrabalho = option.getAttribute('data-trabalho');
+        if (horasTrabalho) {
+            const inicio = document.getElementById('id_hora_inicio');
+            const fim = document.getElementById('id_hora_fim');
+            if (inicio && fim) {
+                inicio.value = '07:00';
+                let h = parseInt(horasTrabalho);
+                let fimHour = (7 + h) % 24;
+                fim.value = (fimHour < 10 ? '0' : '') + fimHour + ':00';
+            }
+        }
+    });
+</script>
+{% endblock %}

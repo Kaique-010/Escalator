@@ -1,0 +1,15 @@
+{% extends 'escalator/base.html' %}
+{% block title %}Folga | Escalator{% endblock %}
+{% block content %}
+<h2>{% if object %}Editar{% else %}Nova{% endif %} Folga</h2>
+<form method="post" class="mt-3">
+    {% csrf_token %}
+    <div class="row">
+        <div class="col-md-6">
+            {{ form.as_p }}
+        </div>
+    </div>
+    <button type="submit" class="btn btn-success">Salvar</button>
+    <a href="{% url 'folga-list' %}" class="btn btn-secondary">Cancelar</a>
+</form>
+{% endblock %}

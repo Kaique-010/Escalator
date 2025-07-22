@@ -1,0 +1,16 @@
+{% extends 'escalator/base.html' %}
+{% block title %}Excluir Folga | Escalator{% endblock %}
+{% block content %}
+<h2>Excluir Folga</h2>
+<p>Tem certeza que deseja excluir esta folga?</p>
+<ul class="list-group mb-3">
+    <li class="list-group-item"><strong>Funcionário:</strong> {{ object.funcionario.nome }}</li>
+    <li class="list-group-item"><strong>Data:</strong> {{ object.data|date:'d/m/Y' }}</li>
+    <li class="list-group-item"><strong>Motivo:</strong> {{ object.motivo|default:'-' }}</li>
+</ul>
+<form method="post">
+    {% csrf_token %}
+    <button type="submit" class="btn btn-danger">Sim, excluir</button>
+    <a href="{% url 'folga-list' %}" class="btn btn-secondary">Cancelar</a>
+</form>
+{% endblock %}

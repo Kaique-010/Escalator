@@ -1,0 +1,45 @@
+{% extends 'escalator/base.html' %}
+{% block title %}Folgas | Escalator{% endblock %}
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-3">
+    <h2>Folgas</h2>
+    <a href="{% url 'folga-create' %}" class="btn btn-success">Nova Folga</a>
+</div>
+<form method="get" class="mb-3">
+    <div class="row g-2">
+        <div class="col-auto">
+            <input type="date" name="data" class="form-control" value="{{ request.GET.data }}">
+        </div>
+        <div class="col-auto">
+            <button class="btn btn-outline-secondary" type="submit">Filtrar por data</button>
+        </div>
+    </div>
+</form>
+<table class="table table-hover">
+    <thead>
+        <tr>
+            <th>Funcionário</th>
+            <th>Data</th>
+            <th>Motivo</th>
+            <th>Ações</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for folga in folgas %}
+        <tr>
+            <td><a href="{% url 'funcionario-detail' folga.funcionario.pk %}">{{ folga.funcionario.nome }}</a></td>
+            <td>{{ folga.data|date:'d/m/Y' }}</td>
+            <td>{{ folga.motivo|default:'-' }}</td>
+            <td>
+                <a href="{% url 'folga-update' folga.pk %}" class="btn btn-sm btn-primary">Editar</a>
+                <a href="{% url 'folga-delete' folga.pk %}" class="btn btn-sm btn-danger">Excluir</a>
+            </td>
+        </tr>
+        {% empty %}
+        <tr>
+            <td colspan="4" class="text-center">Nenhuma folga cadastrada.</td>
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>
+{% endblock %}

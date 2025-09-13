@@ -1,4 +1,5 @@
 from django.views.generic import ListView, CreateView, UpdateView, DeleteView, DetailView, TemplateView
+from django.contrib.auth.mixins import LoginRequiredMixin
 from django.urls import reverse_lazy
 from .models import EscalaPredefinida, Funcionario, Turno, Escala, Folga
 from datetime import date
@@ -165,8 +166,9 @@ class EscalaPredefinidaDetailView(DetailView):
     model = EscalaPredefinida
     template_name = 'escalator/escalapredefinida_detail.html'
 
-class DashboardView(TemplateView):
+class DashboardView(LoginRequiredMixin, TemplateView):
     template_name = 'escalator/dashboard.html'
+    login_url = '/'
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)

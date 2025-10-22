@@ -25,7 +25,12 @@ const BancoHorasScreen: React.FC = () => {
 
   const loadBancoHoras = async () => {
     try {
-      const data = await ApiService.getBancoHoras();
+      if (!user?.funcionario?.id) {
+        console.error('Usuário não encontrado');
+        return;
+      }
+      
+      const data = await ApiService.getBancoHoras(user.funcionario.id);
       setBancoHoras(data);
       
       // Calcular saldo total

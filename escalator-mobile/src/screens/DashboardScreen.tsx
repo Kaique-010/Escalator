@@ -25,6 +25,12 @@ const DashboardScreen: React.FC = () => {
 
   const loadDashboardData = async () => {
     try {
+      if (!user?.funcionario?.id) {
+        console.error('Usuário não encontrado');
+        Alert.alert('Erro', 'Usuário não encontrado. Faça login novamente.');
+        return;
+      }
+      
       const data = await ApiService.getDashboard();
       setDashboardData(data);
     } catch (error: any) {

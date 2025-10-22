@@ -22,8 +22,14 @@ class ValidadorRegrasTrabalho:
     """
     
     def __init__(self):
-        self.periodo_noturno_inicio, self.periodo_noturno_fim = ConfiguracaoSistema.get_periodo_noturno()
-        self.interjornada_minima = ConfiguracaoSistema.get_interjornada_minima()
+        """Inicializa o validador com configurações do sistema"""
+        try:
+            self.periodo_noturno_inicio, self.periodo_noturno_fim = ConfiguracaoSistema.get_periodo_noturno()
+            self.interjornada_minima = ConfiguracaoSistema.get_interjornada_minima()
+        except Exception:
+            # Se não conseguir obter as configurações, usa valores padrão
+            self.periodo_noturno_inicio, self.periodo_noturno_fim = time(22, 0), time(5, 0)
+            self.interjornada_minima = 660
     
     def validar_jornada_diaria(self, funcionario: Funcionario, data: date) -> Dict:
         """Valida se a jornada diária está dentro dos limites legais"""
@@ -204,8 +210,13 @@ class CalculadoraJornada:
     """
     
     def __init__(self):
-        self.periodo_noturno_inicio, self.periodo_noturno_fim = ConfiguracaoSistema.get_periodo_noturno()
-        self.hora_noturna_minutos = float(ConfiguracaoSistema.get_valor('hora_noturna_urbana_minutos', '52.5'))
+        try:
+            self.periodo_noturno_inicio, self.periodo_noturno_fim = ConfiguracaoSistema.get_periodo_noturno()
+            self.hora_noturna_minutos = float(ConfiguracaoSistema.get_valor('hora_noturna_urbana_minutos', '52.5'))
+        except Exception:
+            # Se não conseguir obter as configurações, usa valores padrão
+            self.periodo_noturno_inicio, self.periodo_noturno_fim = time(22, 0), time(5, 0)
+            self.hora_noturna_minutos = 52.5
     
     def calcular_jornada_diaria(self, funcionario: Funcionario, data: date) -> Dict:
         """Calcula a jornada diária completa com todos os adicionais"""
@@ -477,7 +488,10 @@ class ProcessadorPontos:
         # Validações básicas
         validacoes = self._validar_registro_ponto(funcionario, tipo_registro, timestamp, escala)
         if not validacoes['valido']:
-            return validacoes
+            return {
+                'sucesso': False,
+                'erro': validacoes.get('erro', 'Erro de validação')
+            }
         
         # Cria o registro de ponto
         ponto = Ponto.objects.create(

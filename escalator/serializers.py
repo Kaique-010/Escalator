@@ -4,6 +4,7 @@ Implementa validações das regras trabalhistas brasileiras.
 """
 
 from rest_framework import serializers
+from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
 from django.contrib.auth import get_user_model
 from django.utils import timezone
 from datetime import date, time, datetime, timedelta
@@ -21,19 +22,37 @@ from .services import (
 User = get_user_model()
 
 
+class CustomTokenObtainPairSerializer(TokenObtainPairSerializer):
+    """Serializer customizado para incluir dados do usuário na resposta do token"""
+    
+    def validate(self, attrs):
+        data = super().validate(attrs)
+        
+        # Adiciona dados do usuário à resposta
+        data['user'] = {
+            'id': str(self.user.id),
+            'username': self.user.username,
+            'email': self.user.email,
+            'first_name': self.user.first_name,
+            'last_name': self.user.last_name,
+        }
+        
+        return data
+
+
 class FuncionarioSerializer(serializers.ModelSerializer):
     """Serializer para o modelo Funcionario"""
     
-    user_email = serializers.EmailField(source='user.email', read_only=True)
-    user_first_name = serializers.CharField(source='user.first_name', read_only=True)
-    user_last_name = serializers.CharField(source='user.last_name', read_only=True)
+    usuario_email = serializers.EmailField(source='usuario.email', read_only=True)
+    usuario_first_name = serializers.CharField(source='usuario.first_name', read_only=True)
+    usuario_last_name = serializers.CharField(source='usuario.last_name', read_only=True)
     contrato_vigente = serializers.SerializerMethodField()
     
     class Meta:
         model = Funcionario
         fields = [
-            'id', 'user', 'user_email', 'user_first_name', 'user_last_name',
-            'nome', 'cargo', 'departamento', 'data_admissao', 'ativo',
+            'id', 'usuario', 'usuario_email', 'usuario_first_name', 'usuario_last_name',
+            'nome', 'matricula', 'cargo', 'ativo',
             'contrato_vigente', 'created_at'
         ]
         read_only_fields = ['id', 'created_at']

@@ -35,6 +35,14 @@ class Usuario(AbstractUser):
     is_superuser = models.BooleanField(default=False, null=False, blank=False)
     groups = models.ManyToManyField('auth.Group', blank=True, null=False)
     user_permissions = models.ManyToManyField('auth.Permission', blank=True, null=False)
+    
+    # Campo para associar usuário à empresa
+    empresa_id = models.PositiveIntegerField(
+        'ID da Empresa', 
+        null=True, 
+        blank=True,
+        help_text='ID da empresa no banco master'
+    )
 
     class Meta:
         db_table = 'usuario'

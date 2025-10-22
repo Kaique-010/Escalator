@@ -1,4 +1,4 @@
-import React, { useState, useRef } from 'react'
+import React, { useState, useRef, useCallback, useMemo } from 'react'
 import {
   View,
   Text,
@@ -24,7 +24,7 @@ const LoginScreen: React.FC = () => {
   const usernameRef = useRef<TextInput>(null)
   const passwordRef = useRef<TextInput>(null)
 
-  const handleLogin = async () => {
+  const handleLogin = useCallback(async () => {
     if (!username.trim() || !password.trim()) {
       Alert.alert('Erro', 'Por favor, preencha todos os campos')
       return
@@ -38,21 +38,21 @@ const LoginScreen: React.FC = () => {
     } finally {
       setLoading(false)
     }
-  }
+  }, [username, password, signIn])
 
-  const handleSubmit = (e?: any) => {
+  const handleSubmit = useCallback((e?: any) => {
     if (e && e.preventDefault) {
       e.preventDefault()
     }
     handleLogin()
-  }
+  }, [handleLogin])
 
   if (loading) {
     return <LoadingSpinner message="Fazendo login..." />
   }
 
   // Componente de formulário que funciona tanto no web quanto no mobile
-  const FormContent = () => (
+  const FormContent = useMemo(() => (
     <View style={styles.formContainer}>
       <View style={styles.inputContainer}>
         <Text style={styles.label}>Usuário</Text>
@@ -68,12 +68,13 @@ const LoginScreen: React.FC = () => {
           autoComplete="username"
           textContentType="username"
           returnKeyType="next"
-          onSubmitEditing={() => passwordRef.current?.focus()}
-          blurOnSubmit={false}
+          {...(Platform.OS !== 'web' && {
+            onSubmitEditing: () => passwordRef.current?.focus(),
+            blurOnSubmit: false,
+          })}
           {...(Platform.OS === 'web' && {
             accessibilityRole: 'textbox',
             accessibilityLabel: 'Campo de usuário',
-            onFocus: () => console.log('Username field focused'),
           })}
         />
       </View>
@@ -93,11 +94,12 @@ const LoginScreen: React.FC = () => {
           autoComplete="current-password"
           textContentType="password"
           returnKeyType="done"
-          onSubmitEditing={handleSubmit}
+          {...(Platform.OS !== 'web' && {
+            onSubmitEditing: handleSubmit,
+          })}
           {...(Platform.OS === 'web' && {
             accessibilityRole: 'textbox',
             accessibilityLabel: 'Campo de senha',
-            onFocus: () => console.log('Password field focused'),
           })}
         />
       </View>
@@ -115,7 +117,7 @@ const LoginScreen: React.FC = () => {
         </Text>
       </View>
     </View>
-  )
+  ), [username, password, loading, handleSubmit])
 
   return (
     <KeyboardAvoidingView
@@ -132,10 +134,10 @@ const LoginScreen: React.FC = () => {
 
         {Platform.OS === 'web' ? (
           <form onSubmit={handleSubmit} style={{ width: '100%' }}>
-            <FormContent />
+            {FormContent}
           </form>
         ) : (
-          <FormContent />
+          FormContent
         )}
       </ScrollView>
     </KeyboardAvoidingView>

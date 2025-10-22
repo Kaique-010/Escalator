@@ -39,9 +39,22 @@ class FuncionarioViewSet(viewsets.ModelViewSet):
     permission_classes = [permissions.IsAuthenticated]
     filter_backends = [DjangoFilterBackend, SearchFilter, OrderingFilter]
     filterset_fields = ['ativo', 'cargo']
-    search_fields = ['nome', 'user__email', 'cargo']
-    ordering_fields = ['nome', 'data_admissao', 'created_at']
+    search_fields = ['nome', 'usuario__email', 'cargo']
+    ordering_fields = ['nome', 'created_at']
     ordering = ['nome']
+    
+    @action(detail=False, methods=['get'])
+    def me(self, request):
+        """Retorna o funcionário associado ao usuário autenticado"""
+        try:
+            funcionario = Funcionario.objects.get(usuario=request.user)
+            serializer = self.get_serializer(funcionario)
+            return Response(serializer.data)
+        except Funcionario.DoesNotExist:
+            return Response(
+                {'erro': 'Funcionário não encontrado para o usuário atual'},
+                status=status.HTTP_404_NOT_FOUND
+            )
     
     @action(detail=True, methods=['get'])
     def escalas_mes(self, request, pk=None):
@@ -485,7 +498,12 @@ class ConfiguracaoSistemaViewSet(viewsets.ModelViewSet):
     @action(detail=False, methods=['get'])
     def periodo_noturno(self, request):
         """Retorna configuração do período noturno"""
-        inicio, fim = ConfiguracaoSistema.get_periodo_noturno()
+        try:
+            inicio, fim = ConfiguracaoSistema.get_periodo_noturno()
+        except Exception:
+            # Se não conseguir obter as configurações, usa valores padrão
+            from datetime import time
+            inicio, fim = time(22, 0), time(5, 0)
         
         return Response({
             'periodo_noturno_inicio': inicio.strftime('%H:%M'),

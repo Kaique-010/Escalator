@@ -8,6 +8,12 @@ DEBUG = True
 
 ALLOWED_HOSTS = ['*']
 
+# Configuração de autenticação personalizada
+AUTHENTICATION_BACKENDS = [
+    'core.authentication.MultiEmpresaAuthBackend',
+    'django.contrib.auth.backends.ModelBackend',
+]
+
 # Modelo de usuário customizado
 AUTH_USER_MODEL = 'usuarios.Usuario'
 
@@ -26,6 +32,7 @@ INSTALLED_APPS = [
     'rest_framework_simplejwt',
     'corsheaders',
     'django_filters',
+    'core',  # App core para modelos de empresa e licença
     'escalator',
     'usuarios',
 ]
@@ -37,6 +44,7 @@ MIDDLEWARE = [
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
     'django.contrib.auth.middleware.AuthenticationMiddleware',
+    'core.middleware.DatabaseRoutingMiddleware',  # Middleware de roteamento de banco
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
 ]
@@ -67,9 +75,27 @@ WSGI_APPLICATION = 'core.wsgi.application'
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.sqlite3',
-        'NAME': str(BASE_DIR / 'db.sqlite3'),
-    }
+        'NAME': str(BASE_DIR / 'databases' / 'db.sqlite3'),
+        'OPTIONS': {
+            'timeout': 20,
+        },
+        'TIME_ZONE': 'America/Sao_Paulo',
+    },
+    # Banco principal para empresas e licenças
+    'master': {
+        'ENGINE': 'django.db.backends.sqlite3',
+        'NAME': str(BASE_DIR / 'databases' / 'master.sqlite3'),
+        'OPTIONS': {
+            'timeout': 20,
+        },
+        'TIME_ZONE': 'America/Sao_Paulo',
+    },
+    # Bancos individuais das empresas serão criados dinamicamente
+    # Exemplo: empresa_1, empresa_2, etc.
 }
+
+# Configuração do roteador de banco de dados
+DATABASE_ROUTERS = ['core.routers.DatabaseRouter']
 
 
 # Password validation
@@ -150,6 +176,8 @@ CORS_ALLOWED_ORIGINS = [
     "http://127.0.0.1:3000",
     "http://localhost:8081",
     "http://127.0.0.1:8081",
+    "http://localhost:8082",
+    "http://127.0.0.1:8082",
 ]
 
 CORS_ALLOW_CREDENTIALS = True

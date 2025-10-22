@@ -12,18 +12,26 @@ import datetime
 class Command(BaseCommand):
     help = 'Configura dados iniciais do sistema de escalas'
 
+    def add_arguments(self, parser):
+        parser.add_argument(
+            '--database',
+            default='default',
+            help='Especifica o banco de dados a ser usado'
+        )
+
     def handle(self, *args, **options):
-        self.stdout.write(self.style.SUCCESS('Iniciando configuração de dados iniciais...'))
+        database = options['database']
+        self.stdout.write(self.style.SUCCESS(f'Iniciando configuração de dados iniciais no banco {database}...'))
         
         # Criar escalas predefinidas
-        self._criar_escalas_predefinidas()
+        self._criar_escalas_predefinidas(database)
         
         # Criar configurações do sistema
-        self._criar_configuracoes_sistema()
+        self._criar_configuracoes_sistema(database)
         
         self.stdout.write(self.style.SUCCESS('Dados iniciais configurados com sucesso!'))
 
-    def _criar_escalas_predefinidas(self):
+    def _criar_escalas_predefinidas(self, database='default'):
         """Cria escalas predefinidas padrão."""
         escalas = [
             {
@@ -59,7 +67,7 @@ class Command(BaseCommand):
         ]
         
         for escala_data in escalas:
-            escala, created = EscalaPredefinida.objects.get_or_create(
+            escala, created = EscalaPredefinida.objects.using(database).get_or_create(
                 nome=escala_data['nome'],
                 defaults=escala_data
             )
@@ -68,7 +76,7 @@ class Command(BaseCommand):
             else:
                 self.stdout.write(f'Escala predefinida já existe: {escala.nome}')
 
-    def _criar_configuracoes_sistema(self):
+    def _criar_configuracoes_sistema(self, database='default'):
         """Cria configurações padrão do sistema."""
         configuracoes = [
             # Jornada de trabalho
@@ -189,7 +197,7 @@ class Command(BaseCommand):
         ]
         
         for config_data in configuracoes:
-            config, created = ConfiguracaoSistema.objects.get_or_create(
+            config, created = ConfiguracaoSistema.objects.using(database).get_or_create(
                 chave=config_data['chave'],
                 defaults={
                     'valor': config_data['valor'],

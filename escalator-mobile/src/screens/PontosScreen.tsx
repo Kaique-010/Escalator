@@ -42,8 +42,13 @@ const PontosScreen: React.FC = () => {
 
   const loadPontosHoje = async () => {
     try {
+      if (!user?.funcionario?.id) {
+        console.error('Usuário não encontrado');
+        return;
+      }
+      
       const hoje = new Date().toISOString().split('T')[0];
-      const pontos = await ApiService.getPontos({ data: hoje });
+      const pontos = await ApiService.getPontos(user.funcionario.id, hoje, hoje);
       setPontosHoje(pontos);
     } catch (error: any) {
       console.error('Erro ao carregar pontos:', error);
@@ -58,6 +63,11 @@ const PontosScreen: React.FC = () => {
 
   const registrarPonto = async (tipo: TipoPonto) => {
     try {
+      if (!user?.funcionario?.id) {
+        Alert.alert('Erro', 'Usuário não encontrado');
+        return;
+      }
+
       setLoading(true);
 
       // Obter localização atual se disponível
@@ -71,15 +81,16 @@ const PontosScreen: React.FC = () => {
         }
       }
 
-      const pontoData = {
-        tipo,
-        localizacao: currentLocation ? {
-          latitude: currentLocation.coords.latitude,
-          longitude: currentLocation.coords.longitude,
-        } : undefined,
-      };
+      const localizacao = currentLocation ? {
+        latitude: currentLocation.coords.latitude,
+        longitude: currentLocation.coords.longitude,
+      } : undefined;
 
-      await ApiService.registrarPonto(pontoData);
+      await ApiService.registrarPonto(
+        user.funcionario.id,
+        tipo,
+        localizacao
+      );
       
       Alert.alert(
         'Sucesso',
@@ -100,7 +111,7 @@ const PontosScreen: React.FC = () => {
       pausa_inicio: 'início da pausa',
       pausa_fim: 'fim da pausa',
     };
-    return labels[tipo];
+    return labels[tipo] || 'entrada';
   };
 
   const getTipoIcon = (tipo: TipoPonto): string => {
@@ -110,10 +121,13 @@ const PontosScreen: React.FC = () => {
       pausa_inicio: '🟡',
       pausa_fim: '🟡',
     };
-    return icons[tipo];
+    return icons[tipo] || '🟢';
   };
 
   const formatDateTime = (dateTimeString: string) => {
+    if (!dateTimeString) {
+      return { time: '--:--', date: '--/--/----' };
+    }
     const date = new Date(dateTimeString);
     return {
       time: date.toLocaleTimeString('pt-BR', { 
@@ -129,7 +143,7 @@ const PontosScreen: React.FC = () => {
     
     const ultimoPonto = pontosHoje[pontosHoje.length - 1];
     
-    switch (ultimoPonto.tipo) {
+    switch (ultimoPonto.tipo_registro) {
       case 'entrada':
         return 'pausa_inicio';
       case 'pausa_inicio':
@@ -196,13 +210,14 @@ const PontosScreen: React.FC = () => {
         <Text style={styles.sectionTitle}>Pontos de Hoje</Text>
         {pontosHoje.length > 0 ? (
           pontosHoje.map((ponto, index) => {
-            const { time, date } = formatDateTime(ponto.data_hora);
+            if (!ponto || !ponto.tipo_registro) return null;
+            const { time, date } = formatDateTime(ponto.timestamp);
             return (
               <View key={index} style={styles.pontoCard}>
                 <View style={styles.pontoHeader}>
                   <View style={styles.pontoInfo}>
                     <Text style={styles.pontoTipo}>
-                      {getTipoIcon(ponto.tipo)} {getTipoLabel(ponto.tipo).toUpperCase()}
+                      {getTipoIcon(ponto.tipo_registro)} {getTipoLabel(ponto.tipo_registro).toUpperCase()}
                     </Text>
                     <Text style={styles.pontoHora}>{time}</Text>
                   </View>

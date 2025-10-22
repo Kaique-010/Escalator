@@ -52,11 +52,15 @@ class ApiService {
 
               originalRequest.headers.Authorization = `Bearer ${access}`;
               return this.api(originalRequest);
+            } else {
+              // Não há refresh token, fazer logout
+              await this.logout();
+              throw new Error('Sessão expirada. Faça login novamente.');
             }
           } catch (refreshError) {
             // Token refresh falhou, fazer logout
             await this.logout();
-            throw refreshError;
+            throw new Error('Sessão expirada. Faça login novamente.');
           }
         }
 
@@ -97,9 +101,40 @@ class ApiService {
 
   async getCurrentUser(): Promise<Usuario | null> {
     try {
+      // Primeiro tenta obter do AsyncStorage
       const userData = await AsyncStorage.getItem('user_data');
-      return userData ? JSON.parse(userData) : null;
+      if (userData) {
+        const user = JSON.parse(userData);
+        
+        // Verifica se o usuário tem dados do funcionário
+        if (user.funcionario) {
+          return user;
+        }
+        
+        // Se não tem dados do funcionário, busca na API
+        const token = await AsyncStorage.getItem('access_token');
+        if (token) {
+          const response = await this.api.get('/funcionarios/me/', {
+            headers: {
+              Authorization: `Bearer ${token}`
+            }
+          });
+          
+          // Atualiza os dados do usuário com informações do funcionário
+          const updatedUser = {
+            ...user,
+            funcionario: response.data
+          };
+          
+          // Salva os dados atualizados
+          await AsyncStorage.setItem('user_data', JSON.stringify(updatedUser));
+          return updatedUser;
+        }
+      }
+      
+      return null;
     } catch (error) {
+      console.error('Erro ao obter usuário atual:', error);
       return null;
     }
   }
@@ -112,6 +147,11 @@ class ApiService {
     } catch (error) {
       throw this.handleError(error);
     }
+  }
+
+  // Alias para compatibilidade
+  async getDashboard(): Promise<DashboardData> {
+    return this.getDashboardData();
   }
 
   // Funcionários

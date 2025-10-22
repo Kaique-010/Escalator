@@ -174,7 +174,7 @@ const PerfilScreen: React.FC = () => {
           Escalator v1.0.0
         </Text>
         <Text style={styles.footerText}>
-          © 2024 Sistema de Escalas
+          © 2025 Sistema de Escalas Inteligentes
         </Text>
       </View>
     </ScrollView>

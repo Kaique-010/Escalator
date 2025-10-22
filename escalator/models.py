@@ -1,4 +1,3 @@
-import uuid
 from django.db import models
 from django.utils.translation import gettext_lazy as _
 from django.contrib.auth import get_user_model
@@ -9,7 +8,7 @@ from dateutil.relativedelta import relativedelta
 User = get_user_model()
 
 class Funcionario(models.Model):
-    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    id = models.BigAutoField(primary_key=True)  
     usuario = models.OneToOneField(User, on_delete=models.CASCADE, verbose_name=_('Usuário'), null=True, blank=True)
     nome = models.CharField(_('Nome'), max_length=100)
     matricula = models.CharField(_('Matrícula'), max_length=20, unique=True)
@@ -20,11 +19,15 @@ class Funcionario(models.Model):
     class Meta:
         verbose_name = _('Funcionário')
         verbose_name_plural = _('Funcionários')
+        ordering = ['nome']
+        db_table = 'funcionario'
+
 
     def __str__(self):
         return f"{self.nome} ({self.matricula})"
 
 class Turno(models.Model):
+    id = models.BigAutoField(primary_key=True)
     nome = models.CharField(_('Nome do turno'), max_length=50)
     hora_inicio = models.TimeField(_('Hora de início'))
     hora_fim = models.TimeField(_('Hora de término'))
@@ -40,7 +43,7 @@ class Escala(models.Model):
         ('extra', _('Hora Extra')),
     ]
     
-    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    id = models.BigAutoField(primary_key=True)
     funcionario = models.ForeignKey(Funcionario, on_delete=models.CASCADE, verbose_name=_('Funcionário'))
     turno = models.ForeignKey(Turno, on_delete=models.CASCADE, verbose_name=_('Turno'), null=True, blank=True)
     data = models.DateField(_('Data'))
@@ -56,6 +59,7 @@ class Escala(models.Model):
         verbose_name = _('Escala')
         verbose_name_plural = _('Escalas')
         ordering = ['-data']
+        db_table = 'escala'
 
     def __str__(self):
         if self.descanso:
@@ -87,11 +91,14 @@ class Folga(models.Model):
         unique_together = ('funcionario', 'data')
         verbose_name = _('Folga')
         verbose_name_plural = _('Folgas')
+        ordering = ['-data']
+        db_table = 'folga'
 
     def __str__(self):
         return f"{self.funcionario} - {self.data.strftime('%d/%m/%Y')}"
 
 class EscalaPredefinida(models.Model):
+    id = models.BigAutoField(primary_key=True)
     nome = models.CharField('Nome da escala', max_length=50, unique=True)
     descricao = models.CharField('Descrição', max_length=100, blank=True)
     horas_trabalho = models.PositiveIntegerField('Horas de trabalho')
@@ -105,7 +112,7 @@ class EscalaPredefinida(models.Model):
         return f"{self.nome} ({self.horas_trabalho}x{self.horas_descanso})"
 
 class Contrato(models.Model):
-    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    id = models.BigAutoField(primary_key=True)
     funcionario = models.ForeignKey(Funcionario, on_delete=models.CASCADE, verbose_name=_('Funcionário'))
     carga_diaria_max = models.PositiveIntegerField(_('Carga diária máxima (minutos)'), default=480)
     carga_semanal_max = models.PositiveIntegerField(_('Carga semanal máxima (minutos)'), default=2640)
@@ -121,6 +128,7 @@ class Contrato(models.Model):
         verbose_name = _('Contrato')
         verbose_name_plural = _('Contratos')
         ordering = ['-vigencia_inicio']
+        db_table = 'contrato'
 
     def __str__(self):
         return f"Contrato {self.funcionario.nome} - {self.vigencia_inicio}"
@@ -146,7 +154,7 @@ class Ponto(models.Model):
         ('pausa_fim', _('Fim da Pausa')),
     ]
     
-    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    id = models.BigAutoField(primary_key=True)
     funcionario = models.ForeignKey(Funcionario, on_delete=models.CASCADE, verbose_name=_('Funcionário'))
     escala = models.ForeignKey(Escala, on_delete=models.CASCADE, verbose_name=_('Escala'), null=True, blank=True)
     timestamp = models.DateTimeField(_('Data e hora'))
@@ -161,12 +169,13 @@ class Ponto(models.Model):
         verbose_name = _('Ponto')
         verbose_name_plural = _('Pontos')
         ordering = ['-timestamp']
+        db_table = 'ponto'
 
     def __str__(self):
         return f"{self.funcionario.nome} - {self.get_tipo_registro_display()} em {self.timestamp.strftime('%d/%m/%Y %H:%M')}"
 
 class BancoHoras(models.Model):
-    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    id = models.BigAutoField(primary_key=True)
     funcionario = models.ForeignKey(Funcionario, on_delete=models.CASCADE, verbose_name=_('Funcionário'))
     data_referencia = models.DateField(_('Data de referência'))
     credito_minutos = models.IntegerField(_('Crédito (minutos)'), default=0)
@@ -183,6 +192,7 @@ class BancoHoras(models.Model):
         verbose_name_plural = _('Banco de Horas')
         unique_together = ('funcionario', 'data_referencia')
         ordering = ['-data_referencia']
+        db_table = 'banco_horas'
 
     def __str__(self):
         return f"{self.funcionario.nome} - {self.data_referencia.strftime('%d/%m/%Y')} - Saldo: {self.saldo_minutos}min"
@@ -217,6 +227,7 @@ class ConfiguracaoSistema(models.Model):
     class Meta:
         verbose_name = _('Configuração do Sistema')
         verbose_name_plural = _('Configurações do Sistema')
+        db_table = 'configuracao_sistema'
 
     def __str__(self):
         return f"{self.chave}: {self.valor}"
@@ -226,16 +237,32 @@ class ConfiguracaoSistema(models.Model):
         """Método utilitário para obter valor de configuração"""
         try:
             config = cls.objects.get(chave=chave)
-            return config.valor
+            return config.valor if config.valor else default
         except cls.DoesNotExist:
             return default
 
     @classmethod
     def get_periodo_noturno(cls):
         """Retorna o período noturno configurado"""
-        inicio = cls.get_valor('periodo_noturno_inicio', '22:00')
-        fim = cls.get_valor('periodo_noturno_fim', '05:00')
-        return time.fromisoformat(inicio), time.fromisoformat(fim)
+        try:
+            inicio = cls.get_valor('periodo_noturno_inicio', '22:00')
+            fim = cls.get_valor('periodo_noturno_fim', '05:00')
+            
+            # Garante que os valores são strings antes de usar fromisoformat
+            if isinstance(inicio, str) and inicio:
+                inicio_time = time.fromisoformat(inicio)
+            else:
+                inicio_time = time(22, 0)  # Default
+                
+            if isinstance(fim, str) and fim:
+                fim_time = time.fromisoformat(fim)
+            else:
+                fim_time = time(5, 0)  # Default
+                
+            return inicio_time, fim_time
+        except Exception as e:
+            # Em caso de qualquer erro, retorna valores padrão
+            return time(22, 0), time(5, 0)
 
     @classmethod
     def get_interjornada_minima(cls):

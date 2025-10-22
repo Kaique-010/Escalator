@@ -5,6 +5,7 @@ export interface Usuario {
   email: string;
   first_name: string;
   last_name: string;
+  funcionario?: Funcionario;
 }
 
 export interface Funcionario {

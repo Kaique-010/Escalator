@@ -44,7 +44,7 @@ class Migration(migrations.Migration):
         migrations.AddField(
             model_name='escala',
             name='created_at',
-            field=models.DateTimeField(auto_now_add=True, default=0.001037037037037037, verbose_name='Criado em'),
+            field=models.DateTimeField(auto_now_add=True, verbose_name='Criado em'),
             preserve_default=False,
         ),
         migrations.AddField(
@@ -75,7 +75,7 @@ class Migration(migrations.Migration):
         migrations.AddField(
             model_name='funcionario',
             name='created_at',
-            field=models.DateTimeField(auto_now_add=True, default=0.001037037037037037, verbose_name='Criado em'),
+            field=models.DateTimeField(auto_now_add=True, verbose_name='Criado em'),
             preserve_default=False,
         ),
         migrations.AddField(

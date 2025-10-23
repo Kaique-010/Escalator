@@ -37,50 +37,58 @@ graph TD
 
 ## 2. Descrição das Tecnologias
 
-- **Frontend**: React@18 + TypeScript + TailwindCSS + Vite
-- **Backend**: Django@4.2 + Django REST Framework@3.14
-- **Banco de Dados**: PostgreSQL@15 (migração do SQLite atual)
-- **Autenticação**: Django Authentication + JWT para API
-- **Cache**: Redis para sessões e cache de consultas frequentes
+* **Frontend**: React\@18 + TypeScript + TailwindCSS + Vite
+
+* **Backend**: Django\@4.2 + Django REST Framework\@3.14
+
+* **Banco de Dados**: PostgreSQL\@15 (migração do SQLite atual)
+
+* **Autenticação**: Django Authentication + JWT para API
+
+* **Cache**: Redis para sessões e cache de consultas frequentes
 
 ## 3. Definições de Rotas
 
-| Rota | Propósito |
-|------|-----------|
-| /dashboard | Dashboard principal com métricas e alertas |
-| /escalas | Gestão e visualização de escalas |
-| /escalas/criar | Criação de novas escalas |
-| /pontos | Registro e histórico de pontos |
-| /pontos/registrar | Interface de registro de ponto |
-| /banco-horas | Controle de banco de horas |
-| /relatorios | Relatórios e análises |
-| /configuracoes | Configurações do sistema |
-| /api/auth/login | Autenticação de usuários |
-| /api/auth/logout | Logout de usuários |
+| Rota              | Propósito                                  |
+| ----------------- | ------------------------------------------ |
+| /dashboard        | Dashboard principal com métricas e alertas |
+| /escalas          | Gestão e visualização de escalas           |
+| /escalas/criar    | Criação de novas escalas                   |
+| /pontos           | Registro e histórico de pontos             |
+| /pontos/registrar | Interface de registro de ponto             |
+| /banco-horas      | Controle de banco de horas                 |
+| /relatorios       | Relatórios e análises                      |
+| /configuracoes    | Configurações do sistema                   |
+| /api/auth/login   | Autenticação de usuários                   |
+| /api/auth/logout  | Logout de usuários                         |
 
 ## 4. Definições de API
 
 ### 4.1 APIs Principais
 
 **Autenticação de usuários**
+
 ```
 POST /api/auth/login
 ```
 
 Request:
-| Nome do Parâmetro | Tipo | Obrigatório | Descrição |
-|-------------------|------|-------------|-----------|
-| username | string | true | Nome de usuário ou email |
-| password | string | true | Senha do usuário |
+
+| Nome do Parâmetro | Tipo   | Obrigatório | Descrição                |
+| ----------------- | ------ | ----------- | ------------------------ |
+| username          | string | true        | Nome de usuário ou email |
+| password          | string | true        | Senha do usuário         |
 
 Response:
-| Nome do Parâmetro | Tipo | Descrição |
-|-------------------|------|-----------|
-| access_token | string | Token JWT para autenticação |
-| refresh_token | string | Token para renovação |
-| user | object | Dados do usuário autenticado |
+
+| Nome do Parâmetro | Tipo   | Descrição                    |
+| ----------------- | ------ | ---------------------------- |
+| access\_token     | string | Token JWT para autenticação  |
+| refresh\_token    | string | Token para renovação         |
+| user              | object | Dados do usuário autenticado |
 
 **Gestão de Escalas**
+
 ```
 GET /api/escalas/
 POST /api/escalas/
@@ -89,43 +97,49 @@ DELETE /api/escalas/{id}/
 ```
 
 **Registro de Pontos**
+
 ```
 POST /api/pontos/registrar
 GET /api/pontos/historico
 ```
 
 Request (Registro):
-| Nome do Parâmetro | Tipo | Obrigatório | Descrição |
-|-------------------|------|-------------|-----------|
-| funcionario_id | integer | true | ID do funcionário |
-| tipo_registro | string | true | entrada, saida, pausa_inicio, pausa_fim |
-| timestamp | datetime | true | Data e hora do registro |
-| localizacao | object | false | Coordenadas GPS se aplicável |
+
+| Nome do Parâmetro | Tipo     | Obrigatório | Descrição                                 |
+| ----------------- | -------- | ----------- | ----------------------------------------- |
+| funcionario\_id   | integer  | true        | ID do funcionário                         |
+| tipo\_registro    | string   | true        | entrada, saida, pausa\_inicio, pausa\_fim |
+| timestamp         | datetime | true        | Data e hora do registro                   |
+| localizacao       | object   | false       | Coordenadas GPS se aplicável              |
 
 **Banco de Horas**
+
 ```
 GET /api/banco-horas/{funcionario_id}/
 POST /api/banco-horas/compensar
 ```
 
 **Validação de Regras**
+
 ```
 POST /api/validar-jornada
 ```
 
 Request:
-| Nome do Parâmetro | Tipo | Obrigatório | Descrição |
-|-------------------|------|-----------|-----------|
-| funcionario_id | integer | true | ID do funcionário |
-| data_inicio | date | true | Data de início do período |
-| data_fim | date | true | Data de fim do período |
+
+| Nome do Parâmetro | Tipo    | Obrigatório | Descrição                 |
+| ----------------- | ------- | ----------- | ------------------------- |
+| funcionario\_id   | integer | true        | ID do funcionário         |
+| data\_inicio      | date    | true        | Data de início do período |
+| data\_fim         | date    | true        | Data de fim do período    |
 
 Response:
-| Nome do Parâmetro | Tipo | Descrição |
-|-------------------|------|-----------|
-| conformidade | boolean | Se está em conformidade |
-| violacoes | array | Lista de violações encontradas |
-| sugestoes | array | Sugestões de correção |
+
+| Nome do Parâmetro | Tipo    | Descrição                      |
+| ----------------- | ------- | ------------------------------ |
+| conformidade      | boolean | Se está em conformidade        |
+| violacoes         | array   | Lista de violações encontradas |
+| sugestoes         | array   | Sugestões de correção          |
 
 ## 5. Arquitetura do Servidor
 
@@ -239,6 +253,7 @@ erDiagram
 ### 6.2 Linguagem de Definição de Dados
 
 **Tabela de Contratos**
+
 ```sql
 -- Criar tabela de contratos
 CREATE TABLE contratos (
@@ -261,6 +276,7 @@ CREATE INDEX idx_contratos_vigencia ON contratos(vigencia_inicio, vigencia_fim);
 ```
 
 **Tabela de Escalas Expandida**
+
 ```sql
 -- Expandir tabela de escalas existente
 ALTER TABLE escalator_escala ADD COLUMN IF NOT EXISTS tipo_escala VARCHAR(20) DEFAULT 'normal';
@@ -289,6 +305,7 @@ CREATE INDEX idx_pontos_tipo ON pontos(tipo_registro);
 ```
 
 **Tabela de Banco de Horas**
+
 ```sql
 -- Criar tabela de banco de horas
 CREATE TABLE banco_horas (
@@ -312,6 +329,7 @@ CREATE INDEX idx_banco_horas_vencimento ON banco_horas(data_vencimento);
 ```
 
 **Dados Iniciais**
+
 ```sql
 -- Inserir escalas predefinidas brasileiras
 INSERT INTO escalator_escalapredefinida (nome, descricao, horas_trabalho, horas_descanso) VALUES
@@ -329,3 +347,4 @@ INSERT INTO configuracoes_sistema (chave, valor, descricao) VALUES
 ('pausa_intrajornada_6h_minutos', '60', 'Pausa obrigatória para jornadas de 6h ou mais'),
 ('pausa_intrajornada_4h_minutos', '15', 'Pausa obrigatória para jornadas entre 4-6h');
 ```
+

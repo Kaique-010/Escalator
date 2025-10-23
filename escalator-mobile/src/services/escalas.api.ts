@@ -1,29 +1,28 @@
-import { AxiosResponse } from 'axios';
 import { Escala } from '../types';
-import { baseApi, handleApiError } from './base.api';
+import { handleApiError } from './base.api';
+import { apiGet, apiPost, apiPatch, apiDelete } from '../api/typedClient';
 
 class EscalasApiService {
-  // Listar escalas
+  // Listar escalas (cliente tipado)
   async getEscalas(params?: {
     funcionario?: string;
-    data_inicio?: string;
-    data_fim?: string;
+    data_inicio?: string; // suportado no backend, pode não estar no schema
+    data_fim?: string; // suportado no backend, pode não estar no schema
     tipo_escala?: string;
     page?: number;
-    page_size?: number;
   }): Promise<{ results: Escala[]; count: number; next: string | null; previous: string | null }> {
     try {
-      const queryParams = new URLSearchParams();
-      
-      if (params?.funcionario) queryParams.append('funcionario', params.funcionario);
-      if (params?.data_inicio) queryParams.append('data_inicio', params.data_inicio);
-      if (params?.data_fim) queryParams.append('data_fim', params.data_fim);
-      if (params?.tipo_escala) queryParams.append('tipo_escala', params.tipo_escala);
-      if (params?.page) queryParams.append('page', params.page.toString());
-      if (params?.page_size) queryParams.append('page_size', params.page_size.toString());
-
-      const response = await baseApi.get(`/escalas/?${queryParams.toString()}`);
-      return response.data;
+      const data = await apiGet('/api/escalas/', {
+        query: {
+          funcionario: params?.funcionario ? Number(params.funcionario) : undefined,
+          tipo_escala: params?.tipo_escala as any,
+          page: params?.page,
+          // extras fora do schema OpenAPI
+          data_inicio: params?.data_inicio,
+          data_fim: params?.data_fim,
+        } as any,
+      });
+      return data as any;
     } catch (error) {
       throw handleApiError(error);
     }
@@ -32,8 +31,8 @@ class EscalasApiService {
   // Obter escala por ID
   async getEscala(id: string): Promise<Escala> {
     try {
-      const response: AxiosResponse<Escala> = await baseApi.get(`/escalas/${id}/`);
-      return response.data;
+      const data = await apiGet('/api/escalas/{id}/', { path: { id: Number(id) } });
+      return data as Escala;
     } catch (error) {
       throw handleApiError(error);
     }
@@ -46,7 +45,7 @@ class EscalasApiService {
       const response = await this.getEscalas({
         funcionario: funcionarioId,
         data_inicio: hoje,
-        data_fim: hoje
+        data_fim: hoje,
       });
       return response.results.length > 0 ? response.results[0] : null;
     } catch (error) {
@@ -57,18 +56,18 @@ class EscalasApiService {
   // Criar escala
   async createEscala(escala: Omit<Escala, 'id' | 'created_at'>): Promise<Escala> {
     try {
-      const response: AxiosResponse<Escala> = await baseApi.post('/escalas/', escala);
-      return response.data;
+      const data = await apiPost('/api/escalas/', escala as any);
+      return data as Escala;
     } catch (error) {
       throw handleApiError(error);
     }
   }
 
-  // Atualizar escala
+  // Atualizar escala (PATCH)
   async updateEscala(id: string, escala: Partial<Escala>): Promise<Escala> {
     try {
-      const response: AxiosResponse<Escala> = await baseApi.patch(`/escalas/${id}/`, escala);
-      return response.data;
+      const data = await apiPatch('/api/escalas/{id}/', escala as any, { path: { id: Number(id) } });
+      return data as Escala;
     } catch (error) {
       throw handleApiError(error);
     }
@@ -77,7 +76,7 @@ class EscalasApiService {
   // Deletar escala
   async deleteEscala(id: string): Promise<void> {
     try {
-      await baseApi.delete(`/escalas/${id}/`);
+      await apiDelete('/api/escalas/{id}/', { path: { id: Number(id) } });
     } catch (error) {
       throw handleApiError(error);
     }
@@ -86,15 +85,16 @@ class EscalasApiService {
   // Obter escalas da semana
   async getEscalasSemana(funcionarioId: string, dataInicio: string): Promise<Escala[]> {
     try {
-      const dataFim = new Date(dataInicio);
-      dataFim.setDate(dataFim.getDate() + 6);
-      
+      const dataFimDate = new Date(dataInicio);
+      dataFimDate.setDate(dataFimDate.getDate() + 6);
+      const dataFim = dataFimDate.toISOString().split('T')[0];
+
       const response = await this.getEscalas({
         funcionario: funcionarioId,
         data_inicio: dataInicio,
-        data_fim: dataFim.toISOString().split('T')[0]
+        data_fim: dataFim,
       });
-      
+
       return response.results;
     } catch (error) {
       throw handleApiError(error);
@@ -106,13 +106,13 @@ class EscalasApiService {
     try {
       const dataInicio = new Date(ano, mes - 1, 1).toISOString().split('T')[0];
       const dataFim = new Date(ano, mes, 0).toISOString().split('T')[0];
-      
+
       const response = await this.getEscalas({
         funcionario: funcionarioId,
         data_inicio: dataInicio,
-        data_fim: dataFim
+        data_fim: dataFim,
       });
-      
+
       return response.results;
     } catch (error) {
       throw handleApiError(error);

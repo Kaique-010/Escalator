@@ -12,6 +12,29 @@ from rest_framework_simplejwt.views import TokenObtainPairView
 
 class CustomTokenObtainPairView(TokenObtainPairView):
     serializer_class = CustomTokenObtainPairSerializer
+    
+    def post(self, request, *args, **kwargs):
+        # Logs de depuração do fluxo de login
+        try:
+            from core.routers import get_db_for_request
+            print("=== DEBUG /api/token/ POST ===")
+            print("Path:", getattr(request, 'path', None))
+            print("Headers Authorization:", request.headers.get("Authorization"))
+            print("Body keys:", list(getattr(request, 'data', {}).keys()))
+            print("DB alias atual:", get_db_for_request())
+        except Exception as e:
+            print("[WARN] Falha ao coletar debug do login:", str(e))
+        
+        response = super().post(request, *args, **kwargs)
+        
+        try:
+            print("Status:", getattr(response, 'status_code', None))
+            # Evitar logar tokens, apenas estado
+            print("=== FIM DEBUG /api/token/ ===")
+        except Exception:
+            pass
+        
+        return response
 
 # Router para APIs REST
 router = DefaultRouter()

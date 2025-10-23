@@ -1,9 +1,9 @@
-import { AxiosResponse } from 'axios';
 import { Ponto } from '../types';
-import { baseApi, handleApiError } from './base.api';
+import { handleApiError } from './base.api';
+import { apiGet, apiPost, apiPatch, apiDelete } from '../api/typedClient';
 
 class PontosApiService {
-  // Registrar ponto
+  // Registrar ponto (cliente tipado)
   async registrarPonto(
     funcionarioId: string,
     tipoRegistro: 'entrada' | 'saida' | 'pausa_inicio' | 'pausa_fim',
@@ -11,43 +11,42 @@ class PontosApiService {
     observacoes?: string
   ): Promise<Ponto> {
     try {
-      const response: AxiosResponse<Ponto> = await baseApi.post('/pontos/', {
-        funcionario: funcionarioId,
-        tipo_registro: tipoRegistro,
+      const data = await apiPost('/api/pontos/', {
+        funcionario: Number(funcionarioId),
+        tipo_registro: tipoRegistro as any,
         timestamp: new Date().toISOString(),
-        localizacao_lat: localizacao?.latitude,
-        localizacao_lng: localizacao?.longitude,
+        localizacao_lat: localizacao?.latitude ?? null,
+        localizacao_lng: localizacao?.longitude ?? null,
         observacoes,
-      });
-      return response.data;
+      } as any);
+      return data as Ponto;
     } catch (error) {
       throw handleApiError(error);
     }
   }
 
-  // Listar pontos
+  // Listar pontos (cliente tipado)
   async getPontos(params?: {
     funcionario?: string;
-    data_inicio?: string;
-    data_fim?: string;
-    tipo_registro?: string;
+    data_inicio?: string; // suportado no backend
+    data_fim?: string; // suportado no backend
+    tipo_registro?: 'entrada' | 'saida' | 'pausa_inicio' | 'pausa_fim';
     validado?: boolean;
     page?: number;
-    page_size?: number;
   }): Promise<{ results: Ponto[]; count: number; next: string | null; previous: string | null }> {
     try {
-      const queryParams = new URLSearchParams();
-      
-      if (params?.funcionario) queryParams.append('funcionario', params.funcionario);
-      if (params?.data_inicio) queryParams.append('data_inicio', params.data_inicio);
-      if (params?.data_fim) queryParams.append('data_fim', params.data_fim);
-      if (params?.tipo_registro) queryParams.append('tipo_registro', params.tipo_registro);
-      if (params?.validado !== undefined) queryParams.append('validado', params.validado.toString());
-      if (params?.page) queryParams.append('page', params.page.toString());
-      if (params?.page_size) queryParams.append('page_size', params.page_size.toString());
-
-      const response = await baseApi.get(`/pontos/?${queryParams.toString()}`);
-      return response.data;
+      const data = await apiGet('/api/pontos/', {
+        query: {
+          funcionario: params?.funcionario ? Number(params.funcionario) : undefined,
+          tipo_registro: params?.tipo_registro as any,
+          validado: params?.validado,
+          page: params?.page,
+          // extras fora do schema OpenAPI
+          data_inicio: params?.data_inicio,
+          data_fim: params?.data_fim,
+        } as any,
+      });
+      return data as any;
     } catch (error) {
       throw handleApiError(error);
     }
@@ -56,8 +55,8 @@ class PontosApiService {
   // Obter ponto por ID
   async getPonto(id: string): Promise<Ponto> {
     try {
-      const response: AxiosResponse<Ponto> = await baseApi.get(`/pontos/${id}/`);
-      return response.data;
+      const data = await apiGet('/api/pontos/{id}/', { path: { id: Number(id) } });
+      return data as Ponto;
     } catch (error) {
       throw handleApiError(error);
     }
@@ -70,7 +69,7 @@ class PontosApiService {
       const response = await this.getPontos({
         funcionario: funcionarioId,
         data_inicio: hoje,
-        data_fim: hoje
+        data_fim: hoje,
       });
       return response.results;
     } catch (error) {
@@ -78,21 +77,21 @@ class PontosApiService {
     }
   }
 
-  // Atualizar ponto
+  // Atualizar ponto (PATCH)
   async updatePonto(id: string, ponto: Partial<Ponto>): Promise<Ponto> {
     try {
-      const response: AxiosResponse<Ponto> = await baseApi.patch(`/pontos/${id}/`, ponto);
-      return response.data;
+      const data = await apiPatch('/api/pontos/{id}/', ponto as any, { path: { id: Number(id) } });
+      return data as Ponto;
     } catch (error) {
       throw handleApiError(error);
     }
   }
 
-  // Validar ponto
+  // Validar ponto (PATCH)
   async validarPonto(id: string, validado: boolean = true): Promise<Ponto> {
     try {
-      const response: AxiosResponse<Ponto> = await baseApi.patch(`/pontos/${id}/`, { validado });
-      return response.data;
+      const data = await apiPatch('/api/pontos/{id}/', { validado } as any, { path: { id: Number(id) } });
+      return data as Ponto;
     } catch (error) {
       throw handleApiError(error);
     }
@@ -101,7 +100,7 @@ class PontosApiService {
   // Deletar ponto
   async deletePonto(id: string): Promise<void> {
     try {
-      await baseApi.delete(`/pontos/${id}/`);
+      await apiDelete('/api/pontos/{id}/', { path: { id: Number(id) } });
     } catch (error) {
       throw handleApiError(error);
     }
@@ -110,10 +109,7 @@ class PontosApiService {
   // Obter último ponto do funcionário
   async getUltimoPonto(funcionarioId: string): Promise<Ponto | null> {
     try {
-      const response = await this.getPontos({
-        funcionario: funcionarioId,
-        page_size: 1
-      });
+      const response = await this.getPontos({ funcionario: funcionarioId, page: 1 });
       return response.results.length > 0 ? response.results[0] : null;
     } catch (error) {
       throw handleApiError(error);
@@ -123,15 +119,16 @@ class PontosApiService {
   // Obter pontos da semana
   async getPontosSemana(funcionarioId: string, dataInicio: string): Promise<Ponto[]> {
     try {
-      const dataFim = new Date(dataInicio);
-      dataFim.setDate(dataFim.getDate() + 6);
-      
+      const dataFimDate = new Date(dataInicio);
+      dataFimDate.setDate(dataFimDate.getDate() + 6);
+      const dataFim = dataFimDate.toISOString().split('T')[0];
+
       const response = await this.getPontos({
         funcionario: funcionarioId,
         data_inicio: dataInicio,
-        data_fim: dataFim.toISOString().split('T')[0]
+        data_fim: dataFim,
       });
-      
+
       return response.results;
     } catch (error) {
       throw handleApiError(error);

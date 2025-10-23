@@ -8,8 +8,11 @@ from django.db import connections
 from .models import Empresa, Licenca
 from .routers import create_empresa_database, get_empresa_database, set_db_for_request
 from .middleware import EmpresaSessionMiddleware
+import logging
+from .routers import get_db_for_request
 
 User = get_user_model()
+logger = logging.getLogger(__name__)
 
 class MultiEmpresaAuthBackend(ModelBackend):
     """
@@ -23,6 +26,20 @@ class MultiEmpresaAuthBackend(ModelBackend):
         if username is None or password is None:
             return None
         
+        # Logs de debug do fluxo de autenticação
+        try:
+            logger.info("[AUTH] authenticate inicio | username=%s | has_password=%s | empresa_id=%s | db=%s | path=%s",
+                        username, bool(password), empresa_id, get_db_for_request(), getattr(request, 'path', None))
+            print("[AUTH] authenticate inicio:", {
+                "username": username,
+                "has_password": bool(password),
+                "empresa_id": empresa_id,
+                "db": get_db_for_request(),
+                "path": getattr(request, 'path', None)
+            })
+        except Exception as e:
+            print("[WARN] Falha ao coletar debug em authenticate:", str(e))
+        
         try:
             # Busca o usuário
             user = User.objects.get(username=username)
@@ -31,19 +48,31 @@ class MultiEmpresaAuthBackend(ModelBackend):
             if user.check_password(password):
                 # Se empresa_id foi fornecida, verifica se o usuário pertence a ela
                 if empresa_id and user.empresa_id != empresa_id:
+                    print("[AUTH] empresa mismatch:", {"user_empresa": user.empresa_id, "empresa_id": empresa_id})
                     return None
                 
                 # Verifica se a empresa está ativa e tem licença válida
                 if user.empresa_id:
                     if not self._verificar_empresa_ativa(user.empresa_id):
+                        print("[AUTH] empresa inativa ou sem licença:", {"empresa_id": user.empresa_id})
                         return None
                 
+                try:
+                    print("[AUTH] authenticate sucesso:", {"user_id": user.id, "username": user.username})
+                except Exception:
+                    pass
+                
                 return user
+            else:
+                print("[AUTH] senha inválida para usuário:", username)
+                
+                return None
         except User.DoesNotExist:
+            print("[AUTH] usuário não encontrado:", username)
             return None
         
         return None
-    
+
     def _verificar_empresa_ativa(self, empresa_id):
         """
         Verifica se a empresa está ativa e tem licença válida

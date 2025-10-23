@@ -1,87 +1,23 @@
 // Tipos para o sistema de escalas
+import type { components } from '../api/types';
+
+// Mantemos o tipo de Usuario e respostas de auth conforme usado no app
 export interface Usuario {
   id: string;
   username: string;
   email: string;
   first_name: string;
   last_name: string;
-  funcionario?: Funcionario;
+  is_active?: boolean;
+  is_staff?: boolean;
 }
 
-export interface Funcionario {
-  id: string;
-  usuario: Usuario;
-  nome: string;
-  matricula: string;
-  cpf: string;
-  email: string;
-  telefone: string;
-  cargo: string;
-  setor: string;
-  salario: number;
-  ativo: boolean;
-  created_at: string;
-}
-
-export interface Contrato {
-  id: string;
-  funcionario: string;
-  carga_diaria_max: number;
-  carga_semanal_max: number;
-  extra_diaria_cap: number;
-  banco_horas_prazo_meses: number;
-  permite_12x36: boolean;
-  vigencia_inicio: string;
-  vigencia_fim?: string;
-}
-
-export interface EscalaPredefinida {
-  id: string;
-  nome: string;
-  descricao: string;
-  horas_trabalho: number;
-  horas_descanso: number;
-}
-
-export interface Escala {
-  id: string;
-  funcionario: string;
-  data: string;
-  hora_inicio: string;
-  hora_fim: string;
-  pausa_minutos: number;
-  tipo_escala: string;
-  descanso: boolean;
-  created_at: string;
-}
-
-export interface Ponto {
-  id: string;
-  funcionario: string;
-  escala?: string;
-  timestamp: string;
-  tipo_registro: 'entrada' | 'saida' | 'pausa_inicio' | 'pausa_fim';
-  localizacao?: {
-    latitude: number;
-    longitude: number;
-  };
-  validado: boolean;
-  observacoes?: string;
-  created_at: string;
-}
-
-export interface BancoHoras {
-  id: string;
-  funcionario: string;
-  data_referencia: string;
-  credito_minutos: number;
-  debito_minutos: number;
-  saldo_minutos: number;
-  data_vencimento?: string;
-  compensado: boolean;
-  observacoes?: string;
-  created_at: string;
-}
+// Alinhamos tipos do domínio aos esquemas OpenAPI gerados
+export type Funcionario = components['schemas']['Funcionario'];
+export type EscalaPredefinida = components['schemas']['EscalaPredefinida'];
+export type Escala = components['schemas']['Escala'];
+export type Ponto = components['schemas']['Ponto'];
+export type BancoHoras = components['schemas']['BancoHoras'];
 
 export interface AuthResponse {
   access: string;
@@ -89,6 +25,7 @@ export interface AuthResponse {
   user: Usuario;
 }
 
+// Tipos específicos do app (não presentes no OpenAPI)
 export interface DashboardData {
   escala_hoje?: Escala;
   pontos_hoje: Ponto[];

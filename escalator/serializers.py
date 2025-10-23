@@ -84,7 +84,7 @@ class ContratoSerializer(serializers.ModelSerializer):
     class Meta:
         model = Contrato
         fields = [
-            'id', 'funcionario', 'funcionario_nome', 'tipo_contrato',
+            'id', 'funcionario', 'funcionario_nome',
             'carga_diaria_max', 'carga_semanal_max', 'extra_diaria_cap',
             'banco_horas_prazo_meses', 'permite_12x36', 'vigencia_inicio',
             'vigencia_fim', 'vigente', 'created_at'
@@ -414,9 +414,9 @@ class EscalaPredefinidaSerializer(serializers.ModelSerializer):
         model = EscalaPredefinida
         fields = [
             'id', 'nome', 'descricao', 'horas_trabalho', 'horas_descanso',
-            'legal', 'observacoes_legais', 'created_at'
+            'legal', 'observacoes_legais'
         ]
-        read_only_fields = ['id', 'created_at']
+        read_only_fields = ['id']
     
     def get_legal(self, obj):
         """Verifica se a escala está em conformidade com a legislação"""
@@ -446,8 +446,8 @@ class FolgaSerializer(serializers.ModelSerializer):
     
     class Meta:
         model = Folga
-        fields = ['id', 'funcionario', 'funcionario_nome', 'data', 'motivo', 'created_at']
-        read_only_fields = ['id', 'created_at']
+        fields = ['id', 'funcionario', 'funcionario_nome', 'data', 'motivo']
+        read_only_fields = ['id']
 
 
 class RelatorioJornadaSerializer(serializers.Serializer):

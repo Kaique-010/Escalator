@@ -5,8 +5,11 @@ from django.utils.deprecation import MiddlewareMixin
 from django.contrib.auth import get_user_model
 from django.db import connections
 from .routers import set_db_for_request, get_empresa_database, create_empresa_database
+from .routers import get_db_for_request
+import logging
 
 User = get_user_model()
+logger = logging.getLogger(__name__)
 
 class DatabaseRoutingMiddleware(MiddlewareMixin):
     """
@@ -17,6 +20,12 @@ class DatabaseRoutingMiddleware(MiddlewareMixin):
         """
         Processa a requisição e define o banco de dados apropriado
         """
+        # Log inicial da requisição para rastrear roteamento
+        try:
+            logger.info("[ROUTER] request path=%s | authenticated=%s | method=%s", getattr(request, 'path', None), getattr(getattr(request, 'user', None), 'is_authenticated', False), getattr(request, 'method', None))
+            print("[ROUTER] início:", {"path": getattr(request, 'path', None), "authenticated": getattr(getattr(request, 'user', None), 'is_authenticated', False), "method": getattr(request, 'method', None)})
+        except Exception:
+            pass
         # Se o usuário está autenticado
         if hasattr(request, 'user') and request.user.is_authenticated:
             try:
@@ -33,17 +42,25 @@ class DatabaseRoutingMiddleware(MiddlewareMixin):
                     
                     # Define o banco para a requisição
                     set_db_for_request(db_alias)
+                    print("[ROUTER] autenticado com empresa:", {"empresa_id": empresa_id, "db_alias": db_alias})
                 else:
                     # Se não tem empresa, usa o banco default
                     set_db_for_request('default')
+                    print("[ROUTER] autenticado sem empresa, usando default")
                     
             except Exception as e:
                 # Em caso de erro, usa o banco default
                 set_db_for_request('default')
+                print("[ROUTER] erro ao definir banco, fallback default:", str(e))
         else:
             # Usuário não autenticado, usa banco default
             set_db_for_request('default')
-    
+            print("[ROUTER] não autenticado, usando default")
+        try:
+            print("[ROUTER] banco atual:", get_db_for_request())
+        except Exception:
+            pass
+     
     def get_empresa_from_user(self, user):
         """
         Obtém o ID da empresa do usuário
@@ -92,6 +109,7 @@ class EmpresaSessionMiddleware(MiddlewareMixin):
                     create_empresa_database(empresa_id)
                 
                 set_db_for_request(db_alias)
+                print("[ROUTER] sessão empresa ativa:", {"empresa_id": empresa_id, "db_alias": db_alias})
     
     def set_empresa_session(self, request, empresa_id):
         """

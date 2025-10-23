@@ -1,6 +1,7 @@
 import axios, { AxiosInstance, AxiosResponse } from 'axios';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { AuthResponse, Usuario, Funcionario, Escala, Ponto, BancoHoras, DashboardData } from '../types';
+import { apiGet, apiPost } from '../api/typedClient';
 
 // Configuração base da API
 const API_BASE_URL = 'http://127.0.0.1:8000/api';
@@ -24,6 +25,10 @@ class ApiService {
         if (token) {
           config.headers.Authorization = `Bearer ${token}`;
         }
+        // Log de request
+        try {
+          console.log('[API] Request:', { url: config.url, method: config.method, has_auth: !!token });
+        } catch {}
         return config;
       },
       (error) => {
@@ -33,7 +38,12 @@ class ApiService {
 
     // Interceptor para lidar com respostas e renovar token
     this.api.interceptors.response.use(
-      (response) => response,
+      (response) => {
+        try {
+          console.log('[API] Response:', { url: response.config?.url, status: response.status });
+        } catch {}
+        return response;
+      },
       async (error) => {
         const originalRequest = error.config;
 
@@ -42,6 +52,7 @@ class ApiService {
 
           try {
             const refreshToken = await AsyncStorage.getItem('refresh_token');
+            console.log('[API] 401 interceptado, tentando refresh:', { has_refresh: !!refreshToken });
             if (refreshToken) {
               const response = await axios.post(`${API_BASE_URL}/token/refresh/`, {
                 refresh: refreshToken,
@@ -49,6 +60,7 @@ class ApiService {
 
               const { access } = response.data;
               await AsyncStorage.setItem('access_token', access);
+              console.log('[API] Refresh sucesso:', { has_access: !!access });
 
               originalRequest.headers.Authorization = `Bearer ${access}`;
               return this.api(originalRequest);
@@ -60,10 +72,14 @@ class ApiService {
           } catch (refreshError) {
             // Token refresh falhou, fazer logout
             await this.logout();
+            console.log('[API] Refresh falhou:', { detail: (refreshError as any)?.message });
             throw new Error('Sessão expirada. Faça login novamente.');
           }
         }
 
+        try {
+          console.log('[API] Response erro:', { url: originalRequest?.url, status: error.response?.status });
+        } catch {}
         return Promise.reject(error);
       }
     );
@@ -72,6 +88,7 @@ class ApiService {
   // Autenticação
   async login(username: string, password: string): Promise<AuthResponse> {
     try {
+      console.log('[API] Login payload:', { username, password_present: !!password });
       const response: AxiosResponse<AuthResponse> = await this.api.post('/token/', {
         username,
         password,
@@ -79,13 +96,16 @@ class ApiService {
 
       const { access, refresh, user } = response.data;
 
+      console.log('[API] Login sucesso:', { status: response.status, user_id: user?.id, username: user?.username });
+
       // Salvar tokens no AsyncStorage
       await AsyncStorage.setItem('access_token', access);
       await AsyncStorage.setItem('refresh_token', refresh);
       await AsyncStorage.setItem('user_data', JSON.stringify(user));
 
       return response.data;
-    } catch (error) {
+    } catch (error: any) {
+      console.log('[API] Login falhou:', { status: error?.response?.status, detail: error?.response?.data?.detail || error?.message });
       throw this.handleError(error);
     }
   }
@@ -139,7 +159,7 @@ class ApiService {
     }
   }
 
-  // Dashboard
+  // Dashboard (custom)
   async getDashboardData(): Promise<DashboardData> {
     try {
       const response: AxiosResponse<DashboardData> = await this.api.get('/relatorios/dashboard/');
@@ -154,28 +174,28 @@ class ApiService {
     return this.getDashboardData();
   }
 
-  // Funcionários
+  // Funcionários (cliente tipado)
   async getFuncionario(id: string): Promise<Funcionario> {
     try {
-      const response: AxiosResponse<Funcionario> = await this.api.get(`/funcionarios/${id}/`);
-      return response.data;
+      const data = await apiGet('/api/funcionarios/{id}/', { path: { id: Number(id) } });
+      return data as Funcionario;
     } catch (error) {
       throw this.handleError(error);
     }
   }
 
-  // Escalas
+  // Escalas (cliente tipado)
   async getEscalas(funcionarioId?: string, dataInicio?: string, dataFim?: string): Promise<Escala[]> {
     try {
-      const params = new URLSearchParams();
-      if (funcionarioId) params.append('funcionario', funcionarioId);
-      if (dataInicio) params.append('data_inicio', dataInicio);
-      if (dataFim) params.append('data_fim', dataFim);
-
-      const response: AxiosResponse<{ results: Escala[] }> = await this.api.get(
-        `/escalas/?${params.toString()}`
-      );
-      return response.data.results;
+      const data = await apiGet('/api/escalas/', {
+        query: {
+          funcionario: funcionarioId ? Number(funcionarioId) : undefined,
+          // extras fora do schema OpenAPI
+          data_inicio: dataInicio,
+          data_fim: dataFim,
+        } as any,
+      });
+      return (data as any).results ?? [];
     } catch (error) {
       throw this.handleError(error);
     }
@@ -191,7 +211,7 @@ class ApiService {
     }
   }
 
-  // Pontos
+  // Pontos (cliente tipado)
   async registrarPonto(
     funcionarioId: string,
     tipoRegistro: 'entrada' | 'saida' | 'pausa_inicio' | 'pausa_fim',
@@ -199,14 +219,15 @@ class ApiService {
     observacoes?: string
   ): Promise<Ponto> {
     try {
-      const response: AxiosResponse<Ponto> = await this.api.post('/pontos/', {
-        funcionario: funcionarioId,
-        tipo_registro: tipoRegistro,
+      const data = await apiPost('/api/pontos/', {
+        funcionario: Number(funcionarioId),
+        tipo_registro: tipoRegistro as any,
         timestamp: new Date().toISOString(),
-        localizacao,
+        localizacao_lat: localizacao?.latitude ?? null,
+        localizacao_lng: localizacao?.longitude ?? null,
         observacoes,
-      });
-      return response.data;
+      } as any);
+      return data as Ponto;
     } catch (error) {
       throw this.handleError(error);
     }
@@ -214,15 +235,15 @@ class ApiService {
 
   async getPontos(funcionarioId?: string, dataInicio?: string, dataFim?: string): Promise<Ponto[]> {
     try {
-      const params = new URLSearchParams();
-      if (funcionarioId) params.append('funcionario', funcionarioId);
-      if (dataInicio) params.append('data_inicio', dataInicio);
-      if (dataFim) params.append('data_fim', dataFim);
-
-      const response: AxiosResponse<{ results: Ponto[] }> = await this.api.get(
-        `/pontos/?${params.toString()}`
-      );
-      return response.data.results;
+      const data = await apiGet('/api/pontos/', {
+        query: {
+          funcionario: funcionarioId ? Number(funcionarioId) : undefined,
+          // extras fora do schema OpenAPI
+          data_inicio: dataInicio,
+          data_fim: dataFim,
+        } as any,
+      });
+      return (data as any).results ?? [];
     } catch (error) {
       throw this.handleError(error);
     }
@@ -237,13 +258,13 @@ class ApiService {
     }
   }
 
-  // Banco de Horas
+  // Banco de Horas (cliente tipado)
   async getBancoHoras(funcionarioId: string): Promise<BancoHoras[]> {
     try {
-      const response: AxiosResponse<{ results: BancoHoras[] }> = await this.api.get(
-        `/banco-horas/?funcionario=${funcionarioId}`
-      );
-      return response.data.results;
+      const data = await apiGet('/api/banco-horas/', {
+        query: { funcionario: Number(funcionarioId) } as any,
+      });
+      return (data as any).results ?? [];
     } catch (error) {
       throw this.handleError(error);
     }
@@ -251,30 +272,24 @@ class ApiService {
 
   async getBancoHorasAtual(funcionarioId: string): Promise<BancoHoras | null> {
     try {
-      const bancoHoras = await this.getBancoHoras(funcionarioId);
-      // Retorna o mais recente
-      return bancoHoras.length > 0 ? bancoHoras[0] : null;
+      const lista = await this.getBancoHoras(funcionarioId);
+      return lista.length > 0 ? lista[0] : null;
     } catch (error) {
       throw this.handleError(error);
     }
   }
 
-  // Tratamento de erros
   private handleError(error: any): Error {
-    if (error.response) {
-      // Erro da API
+    if (error?.response) {
       const message = error.response.data?.message || error.response.data?.detail || 'Erro na API';
       return new Error(message);
-    } else if (error.request) {
-      // Erro de rede
+    } else if (error?.request) {
       return new Error('Erro de conexão. Verifique sua internet.');
     } else {
-      // Outro erro
-      return new Error(error.message || 'Erro desconhecido');
+      return new Error(error?.message || 'Erro desconhecido');
     }
   }
 
-  // Verificar se está autenticado
   async isAuthenticated(): Promise<boolean> {
     try {
       const token = await AsyncStorage.getItem('access_token');

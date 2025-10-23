@@ -125,7 +125,7 @@ class ContratoViewSet(viewsets.ModelViewSet):
     serializer_class = ContratoSerializer
     permission_classes = [permissions.IsAuthenticated]
     filter_backends = [DjangoFilterBackend, SearchFilter, OrderingFilter]
-    filterset_fields = ['funcionario', 'tipo_contrato', 'permite_12x36']
+    filterset_fields = ['funcionario', 'permite_12x36']
     search_fields = ['funcionario__nome']
     ordering_fields = ['vigencia_inicio', 'created_at']
     ordering = ['-vigencia_inicio']
